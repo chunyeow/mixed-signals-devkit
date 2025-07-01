@@ -56,6 +56,10 @@ class MixedSignalsExplorer(object):
         # === other constant
         self.time_anchor_agent = 'top'
 
+        # === to preprocess raw point cloud
+        self._name_cars = set(('003', '004', 'laser'))
+        self._translate_car_along_z = -3.25
+
     def _make_label_generator_for_avail_seqs(self) -> Dict[TYPE_SEQ_INDEX, SequenceLabeledFrames]:
 
         label_file = self.root / "V2X_dataset-v0.4-labels.json"
@@ -138,6 +142,14 @@ class MixedSignalsExplorer(object):
         elif agent_name == 'dome':
             # pc is in `map` frame -> need to map it back to agent's frame
             apply_se3_(self.dome_se3_map, pc)
+
+        if agent_name in self._name_cars:
+            # translate point cloud of cars (003, 004, laser) to make 
+            # the origin of their body frame has roughly the same height as RSU
+            pc[:, 2] += self._translate_car_along_z
+
+        # normalize intensity
+        pc[:, 3] = np.clip(pc[:, 3] / 3500.0, a_min=0.0, a_max=1.0)
 
         return pc, timestamp
 

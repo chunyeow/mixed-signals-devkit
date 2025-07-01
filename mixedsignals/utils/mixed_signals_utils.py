@@ -112,6 +112,8 @@ class SequenceOdomAgent(object):
 
         self._list_time_idx_offset = np.array([0, 1, -1])
 
+        self._translate_car_along_z = -3.25
+
     def _find_indices_odom(self, query_timestamp: np.float128, debug: bool = False) -> int:
         odom_idx = np.searchsorted(self.all_timestamp, query_timestamp)
         if odom_idx == 0 or odom_idx == len(self.all_timestamp):
@@ -131,8 +133,17 @@ class SequenceOdomAgent(object):
         
     def return_map_se3_agent(self, query_timestamp: np.float128, debug: bool = False) -> np.ndarray:
         odom_idx = self._find_indices_odom(query_timestamp, debug)
-        return make_se3(self.all_position[odom_idx], 
-                        quaternion=self.all_orientation[odom_idx])
+        map_se3_agent = make_se3(self.all_position[odom_idx], 
+                                 quaternion=self.all_orientation[odom_idx])
+    
+        # translate the origin of the body frame of cars
+        # to make them resemble the origin of the body frame of RSU
+        agent_se3_agent_translated = np.eye(4)
+        agent_se3_agent_translated[:3, -1] = np.array([0, 0, -self._translate_car_along_z])
+        
+        map_se3_agent = map_se3_agent @ agent_se3_agent_translated
+
+        return map_se3_agent
 
     @staticmethod
     def check_agent_exist_in_seq(dataset_root: Path, seq_index: int, agent_name: str) -> bool:
