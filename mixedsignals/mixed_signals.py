@@ -21,9 +21,9 @@ class MixedSignalsExplorer(object):
         self.root = Path(dataset_root)
         self.verbose = verbose
 
-        self.name_vehicles = ['laser', '003', '004']
-        self.name_rsu_lidars = ['top', 'dome']
-        self.name_agents = self.name_rsu_lidars + self.name_rsu_lidars
+        self.name_vehicles = ('laser', '003', '004')
+        self.name_rsu_lidars = ('top', 'dome')
+        self.name_agents = self.name_rsu_lidars + self.name_vehicles
         self.dict_agent_indicator = dict(zip(self.name_agents, range(len(self.name_agents))))
 
         self.available_sequences_index = find_available_sequences(self.root)
@@ -55,10 +55,41 @@ class MixedSignalsExplorer(object):
 
         # === other constant
         self.time_anchor_agent = 'top'
+        self._category_indices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        self._category_names = ['car',  # 1
+                            'pedestrian',  # 2
+                            'truck',  # 3
+                            'motorbike',  # 4
+                            'bicycle',  # 5
+                            'emergency_vehicle',  # 6
+                            'bus',  # 7
+                            'portable_personal_mobility',  # 8
+                            'electric_vehicle',  # 9
+                            'trailer'  # 10
+                            ]
 
         # === to preprocess raw point cloud
-        self._name_cars = set(('003', '004', 'laser'))
         self._translate_car_along_z = -3.25
+
+    @property
+    def category_indices(self):
+        return self._category_indices
+    
+    @property
+    def category_names(self):
+        return self._category_names
+    
+    @property
+    def num_agents(self):
+        return len(self.name_agents)
+
+    def return_available_sequences(self) -> Tuple[int]:
+        avail_seqs = list(self.label_generators.keys())
+        avail_seqs.sort()
+        return tuple(avail_seqs)
+    
+    def return_squence_length(self, seq_index: TYPE_SEQ_INDEX) -> int:
+        return len(self.pc_generators[seq_index])
 
     def _make_label_generator_for_avail_seqs(self) -> Dict[TYPE_SEQ_INDEX, SequenceLabeledFrames]:
 
@@ -143,7 +174,7 @@ class MixedSignalsExplorer(object):
             # pc is in `map` frame -> need to map it back to agent's frame
             apply_se3_(self.dome_se3_map, pc)
 
-        if agent_name in self._name_cars:
+        if agent_name in self.name_vehicles:
             # translate point cloud of cars (003, 004, laser) to make 
             # the origin of their body frame has roughly the same height as RSU
             pc[:, 2] += self._translate_car_along_z
