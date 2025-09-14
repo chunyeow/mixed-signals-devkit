@@ -393,6 +393,13 @@ class SequencePointClouds(object):
         
         return
 
+    def __len__(self) -> int:
+        if not self.agents_timestamp:
+            return 0
+
+        first_agent_name = list(self.agents_timestamp.keys())[0]
+        return len(self.agents_timestamp[first_agent_name])
+
     def return_point_cloud_of_agent(self, 
                                     agent_name: TYPE_AGENT_NAME,
                                     sync_time_idx: int,
